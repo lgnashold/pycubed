@@ -2,14 +2,34 @@ import board
 import busio
 import time
 import digitalio
-#TX, RX
-uart = busio.UART(board.SCK, board.MOSI, baudrate=9600)
+import json
+
+uart = busio.UART(board.PB16, board.PB17, baudrate=9600)
+
+testdata = {"hello":"Moritz","How":"AreYouDoing"}
+
+def sendMessage(raw):
+    payload = json.dumps(raw) + "\n"
+    b= bytearray()
+    b.extend(payload)
+    numBytes = uart.write(b)
+    #print("Wrote message to Pi (" + str(numBytes) + "): " + payload)
+
+def handleMessage(msg):
+    print(msg.decode('utf-8'))
+
+count = 0
 
 while True:
-		if uart.in_waiting: # check if there's anything in uart buffer
-			data = uart.read(32) # read at most 32 bytes
+    # checks if bytes in UART buffer
+    if uart.in_waiting:
+        # Reads line of data as bytes
+        data = uart.readline()
+        if data is not None:
+            handleMessage(data)
 
-			# data is a bytearray, we'll want to convert it to a string
-			data_string = ''.join([chr(b) for b in data])
-			print(data_string)
-		time.sleep(0.1)
+    count += 1
+    if count % 10 == 0:
+        sendMessage(testdata)
+
+    time.sleep(0.1)
